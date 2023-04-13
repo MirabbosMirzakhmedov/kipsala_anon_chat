@@ -1,4 +1,3 @@
-import psycopg2
 from telebot import types
 import telebot
 from config import BOT_TOKEN, MY_USER_ID
