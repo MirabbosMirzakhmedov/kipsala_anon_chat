@@ -1,9 +1,8 @@
-import sqlite3
-
+import psycopg2
 
 class Database:
-    def __init__(self, database_file):
-        self.connection = sqlite3.connect(database_file, check_same_thread=False)
+    def __init__(self, db_url):
+        self.connection = psycopg2.connect(db_url)
         self.cursor = self.connection.cursor()
 
     def add_queue(self, chat_id, gender):

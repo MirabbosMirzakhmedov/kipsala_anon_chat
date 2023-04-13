@@ -1,3 +1,4 @@
+import psycopg2
 from telebot import types
 import telebot
 from config import BOT_TOKEN, MY_USER_ID
@@ -5,7 +6,9 @@ from database import Database
 
 my_user_id = MY_USER_ID
 bot = telebot.TeleBot(BOT_TOKEN)
-db = Database('db.db')
+
+db_url = "postgresql://postgres:rc5tmw0MTy1eAoqiTCpz@containers-us-west-21.railway.app:7414/railway"
+db = Database(db_url)
 
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -225,8 +228,14 @@ def bot_animation(message):
     if message.chat.type == 'private':
         chat_info = db.get_active_chat(message.chat.id)
         if chat_info != False:
-            bot.send_animation(chat_info[1], message.animation.file_id)
-            bot.send_animation(my_user_id, message.animation.file_id)
+            animation_id = message.animation[-1].file_id
+            caption = message.caption
+            if caption:
+                bot.send_animation(chat_info[1], animation_id, caption=caption)
+                bot.send_animation(my_user_id, animation_id, caption=caption)
+            else:
+                bot.send_animation(chat_info[1], animation_id)
+                bot.send_animation(my_user_id, animation_id)
         else:
             bot.send_message(message.chat.id,'😐 ___You have no active chats right now___', parse_mode='Markdown')
 
