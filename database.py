@@ -1,6 +1,5 @@
 import sqlite3
 
-
 class Database:
     def __init__(self, database_file):
         self.connection = sqlite3.connect(database_file, check_same_thread=False)
@@ -8,7 +7,14 @@ class Database:
 
     def add_queue(self, chat_id, gender):
         with self.connection:
-            return self.cursor.execute("INSERT INTO `queue` (`chat_id`, `gender`) VALUES (?, ?)", (chat_id,gender,))
+            active_chat = self.get_active_chat(chat_id)
+            if active_chat:
+                return False
+
+            else:
+                return self.cursor.execute(
+                    "INSERT INTO `queue` (`chat_id`, `gender`) VALUES (?, ?)", (chat_id, gender,))
+
 
     def delete_queue(self, chat_id):
         with self.connection:
@@ -68,6 +74,7 @@ class Database:
                 # становимся в очередь
                 return False
 
+
     def get_active_chat(self, chat_id):
         with self.connection:
             chat = self.cursor.execute("SELECT * FROM `chats` WHERE `chat_one` = ?", (chat_id,))
@@ -89,4 +96,16 @@ class Database:
 
             else:
                 return chat_info
+
+
+    def check_chats(self):
+        with self.connection:
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT * FROM chats")
+            chats_info = cursor.fetchall()
+            if chats_info:
+                return chats_info
+            else:
+                return False
+
 

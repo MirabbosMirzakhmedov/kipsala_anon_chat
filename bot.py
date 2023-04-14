@@ -1,10 +1,10 @@
 from telebot import types
 import telebot
-from config import BOT_TOKEN, MY_USER_ID
 from database import Database
 
-my_user_id = MY_USER_ID
-bot = telebot.TeleBot(BOT_TOKEN)
+my_user_id = 368195441
+bot = telebot.TeleBot("5647871316:AAEsxZI1piQcqhp9LO0TA7kzwI4NfQTfjLo")
+
 db = Database('db.db')
 
 def main_menu():
@@ -40,10 +40,6 @@ def start(message):
         parse_mode='Markdown'
     )
 
-    if message.from_user.username:
-        bot.send_message(my_user_id, f'Joined: @{message.from_user.username}')
-    else:
-        bot.send_message(my_user_id, f'Joined: {message.from_user.first_name}')
 
 @bot.message_handler(commands = ['support'])
 def support(message):
@@ -78,6 +74,11 @@ def stop(message):
     else:
         bot.send_message(message.chat.id, '😐 ___You have no active chats right now___', reply_markup=markup, parse_mode='Markdown')
 
+@bot.message_handler(commands=['check'])
+def check_chat(message):
+    if message.chat.id == my_user_id:
+        chats_info = db.check_chats()
+        bot.send_message(my_user_id, text=f"Current chats {chats_info}:\n\n{chats_info}")
 
 @bot.message_handler(content_types= ['text'])
 def bot_message(message):
@@ -85,8 +86,9 @@ def bot_message(message):
         if message.text == '🔎 Find a partner' or message.text == 'Next ➡️':
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
             item1 = types.KeyboardButton('🔎 Male')
-            item2 = types.KeyboardButton('🔎 Female')
-            item3 = types.KeyboardButton('👫 Random')
+            item2 = types.KeyboardButton('👫 Random')
+            item3 = types.KeyboardButton('🔎 Female')
+
             markup.add(item1, item2, item3)
 
             bot.send_message(message.chat.id, '😊 ___Who do you want to search?___', reply_markup=markup, parse_mode='Markdown')
@@ -99,35 +101,47 @@ def bot_message(message):
             user_info = db.get_gender_chat('male')
             chat_two = user_info[0]
             if db.create_chat(message.chat.id, chat_two) == False:
-                db.add_queue(message.chat.id, db.get_gender(message.chat.id))
-                bot.send_message(message.chat.id, '🕵️ ___Looking for a partner…___', reply_markup=stop_search(), parse_mode='Markdown')
+
+                if db.add_queue(message.chat.id, db.get_gender(message.chat.id)) == False:
+                    # if user already has a partner
+                    bot.send_message(message.chat.id, '___🙄 You are chatting now...___', reply_markup=stop_dialog(), parse_mode='Markdown')
+                else:
+                    bot.send_message(message.chat.id, '🕵️ ___Looking for a male partner…___', reply_markup=stop_search(), parse_mode='Markdown')
             else:
-                mess = "🎉 ___Partner found! Say hi!___ 😊"
+                mess = f"🎉 ___Partner found! Say hi!___ 😊"
 
                 bot.send_message(message.chat.id, mess, reply_markup=stop_dialog(), parse_mode='Markdown')
                 bot.send_message(chat_two, mess, reply_markup=stop_dialog(), parse_mode='Markdown')
+
 
         elif message.text == '🔎 Female':
             user_info = db.get_gender_chat('female')
             chat_two = user_info[0]
             if db.create_chat(message.chat.id, chat_two) == False:
-                db.add_queue(message.chat.id, db.get_gender(message.chat.id))
-                bot.send_message(message.chat.id, '🕵️ ___Looking for a partner…___', reply_markup=stop_search(), parse_mode='Markdown')
+                if db.add_queue(message.chat.id, db.get_gender(message.chat.id)) == False:
+                    # if user already has a partner
+                    bot.send_message(message.chat.id, '___🙄 You are chatting now...___', reply_markup=stop_dialog(), parse_mode='Markdown')
+                else:
+                    bot.send_message(message.chat.id, '🕵️ ___Looking for a female partner…___', reply_markup=stop_search(), parse_mode='Markdown')
             else:
-                mess = " 🎉 ___Partner found! Say hi!___ 😊"
+                mess = f"🎉 ___Partner found! Say hi!___ 😊"
 
                 bot.send_message(message.chat.id, mess, reply_markup=stop_dialog(), parse_mode='Markdown')
                 bot.send_message(chat_two, mess, reply_markup=stop_dialog(), parse_mode='Markdown')
+
 
         elif message.text == '👫 Random':
             user_info = db.get_chat()
             chat_two = user_info[0] # берем собеседника который стоит на очереди
 
             if db.create_chat(message.chat.id, chat_two) == False:
-                db.add_queue(message.chat.id, db.get_gender(message.chat.id))
-                bot.send_message(message.chat.id, '🕵️ ___Looking for a partner…___', reply_markup=stop_search(), parse_mode='Markdown')
+                if db.add_queue(message.chat.id, db.get_gender(message.chat.id)) == False:
+                    # if user already has a partner
+                    bot.send_message(message.chat.id, '___🙄 You are chatting now...___', reply_markup=stop_dialog(), parse_mode='Markdown')
+                else:
+                    bot.send_message(message.chat.id, '🕵️ ___Looking for a random partner…___', reply_markup=stop_search(), parse_mode='Markdown')
             else:
-                mess = " 🎉 ___Partner found! Say hi!___ 😊"
+                mess = f"🎉 ___Partner found! Say hi!___ 😊"
 
                 bot.send_message(message.chat.id, mess, reply_markup=stop_dialog(), parse_mode='Markdown')
                 bot.send_message(chat_two, mess, reply_markup=stop_dialog(), parse_mode='Markdown')
@@ -143,26 +157,39 @@ def bot_message(message):
             else:
                 bot.send_message(message.chat.id, '😐 ___You have no active chats right now___', parse_mode='Markdown')
 
+
         elif message.text == '🧔🏻‍♂️ Male':
             if db.set_gender(message.chat.id, 'male'):
                 bot.send_message(message.chat.id, '✅ ___Your gender was successfully added___', reply_markup=main_menu(), parse_mode='Markdown')
+                bot.send_message(my_user_id, f'Joined: @{message.from_user.username} | {db.get_gender(message.chat.id)} | {message.chat.id}')
             else:
-                bot.send_message(message.chat.id, '❌ ___You already set your gender___',parse_mode='Markdown', reply_markup=main_menu())
-                # if already gender was set and send main_menu() as a reply_keyboard.
+                bot.send_message(message.chat.id, '❌ <em>You already set your gender, please contact <a href="https://t.me/mirabbos_developer">Admin</a> to change it</em>',parse_mode='HTML', reply_markup=main_menu(), disable_web_page_preview=True)
+                bot.send_message(my_user_id,
+                                 f'Joined: @{message.from_user.first_name} | {db.get_gender(message.chat.id)} | {message.chat.id}')
 
 
         elif message.text == '👱🏻‍♀️ Female':
             if db.set_gender(message.chat.id, 'female'):
                 bot.send_message(message.chat.id, '✅ ___Your gender was successfully added___', reply_markup=main_menu(), parse_mode='Markdown')
+                bot.send_message(my_user_id,
+                                 f'Joined: @{message.from_user.username} | {db.get_gender(message.chat.id)} | {message.chat.id}')
             else:
-                bot.send_message(message.chat.id, '❌ ___You already set your gender___', parse_mode='Markdown', reply_markup=main_menu())
+                bot.send_message(message.chat.id, '❌ <em>You already set your gender, please contact <a href="https://t.me/mirabbos_developer">Admin</a> to change it</em>',parse_mode='HTML', reply_markup=main_menu(), disable_web_page_preview=True)
+                bot.send_message(my_user_id,
+                                 f'Joined: @{message.from_user.first_name} | {db.get_gender(message.chat.id)} | {message.chat.id}')
 
         else:
             if db.get_active_chat(message.chat.id) != False:
                 chat_info = db.get_active_chat(message.chat.id)
                 bot.send_message(chat_info[1], message.text)
+
             else:
-                bot.send_message(message.chat.id, '😐 ___You have no active chats right now___', parse_mode='Markdown')
+                bot.send_message(message.chat.id, '😐 ___You have no active chats right now___', parse_mode='Markdown', reply_markup=main_menu())
+
+
+######################
+# MEDIA SECTION
+######################
 
 # Sending Sticker
 @bot.message_handler(content_types='sticker')
@@ -225,8 +252,14 @@ def bot_animation(message):
     if message.chat.type == 'private':
         chat_info = db.get_active_chat(message.chat.id)
         if chat_info != False:
-            bot.send_animation(chat_info[1], message.animation.file_id)
-            bot.send_animation(my_user_id, message.animation.file_id)
+            animation_id = message.animation[-1].file_id
+            caption = message.caption
+            if caption:
+                bot.send_animation(chat_info[1], animation_id, caption=caption)
+                bot.send_animation(my_user_id, animation_id, caption=caption)
+            else:
+                bot.send_animation(chat_info[1], animation_id)
+                bot.send_animation(my_user_id, animation_id)
         else:
             bot.send_message(message.chat.id,'😐 ___You have no active chats right now___', parse_mode='Markdown')
 
