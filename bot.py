@@ -2,10 +2,18 @@ from telebot import types
 import telebot
 from database import Database
 
+<<<<<<< HEAD
 my_user_id = 368195441
 bot = telebot.TeleBot("5647871316:AAEsxZI1piQcqhp9LO0TA7kzwI4NfQTfjLo")
 
 db = Database('db.db')
+=======
+my_user_id = MY_USER_ID
+bot = telebot.TeleBot(BOT_TOKEN)
+
+db_url = "postgresql://postgres:rc5tmw0MTy1eAoqiTCpz@containers-us-west-21.railway.app:7414/railway"
+db = Database(db_url)
+>>>>>>> origin/master
 
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
